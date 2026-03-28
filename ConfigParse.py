@@ -22,7 +22,7 @@ class ConfigParse:
             with open(self.file, 'r') as f:
                 lines = f.readlines()
         except FileNotFoundError:
-            raise FileNotFoundError(f"Error: {self.file} file does not exists")
+            raise FileNotFoundError(f"[ERROR]: {self.file} file does not exists")
         return lines
     
     def get_keys(self) -> dict:
@@ -40,13 +40,14 @@ class ConfigParse:
         not_parsed_config = {}
         for i in key_value_lines:
             key, value = i.strip().split('=', 1)
-            not_parsed_config[key.strip] = value.strip()
+            not_parsed_config[key.strip()] = value.strip()
 
-        if not all(k in not_parsed_config for k in self.required_keys):
-            raise ValueError("Missing required keys in config file")
+        for i in self.required_keys:
+            if i not in not_parsed_config:
+                raise ValueError("[ERROR]: Error: Required keys are missing")
         return not_parsed_config
     
-    def parse_keys(self) -> None:
+    def parse_keys(self) -> dict:
         """
         Gets the dictionary from get_keys() method and
         convertsall the values to the corresponding type.
@@ -62,36 +63,63 @@ class ConfigParse:
         try:
             configs['WIDTH'] = int(configs['WIDTH'])
         except ValueError:
-            raise ValueError("WIDTH should be a number(e.g. 15)")
+            raise ValueError("[ERROR]: WIDTH should be a number(e.g. 15)")
         try:
             configs['HEIGHT'] = int(configs['HEIGHT'])
         except ValueError:
-            raise ValueError("HEIGHT should be a number(e.g. 15)")
+            raise ValueError("[ERROR]: HEIGHT should be a number(e.g. 15)")
         try:
             x, y = configs['ENTRY'].split(',', 1)
             configs['ENTRY'] = (int(x), int(y))
         except ValueError:
             raise ValueError(
-                "ENTRY should be two numbers separated by a comma(e.g. 0,0)")
+                "[ERROR]: ENTRY should be two numbers separated by a comma(e.g. 0,0)")
         try:
             x, y = configs['EXIT'].split(',', 1)
             configs['EXIT'] = (int(x), int(y))
         except ValueError:
             raise ValueError(
-                "EXIT should be two numbers separated by a comma(e.g. 0,0)")
+                "[ERROR]: EXIT should be two numbers separated by a comma(e.g. 0,0)")
         try:
             configs['PERFECT'] = bool(configs['PERFECT'])
         except ValueError:
-            raise ValueError("PERFECT can only be True or False")
+            raise ValueError("[ERROR]: PERFECT can only be True or False")
         if 'SEED' in configs:
             try:
                 configs['SEED'] = float(configs['SEED'])
             except ValueError:
-                raise ValueError("SEED can only be a number")
+                raise ValueError("[ERROR]: SEED can only be a number")
         else:
             configs['SEED'] = 42
-        self.config = configs
+        return configs
 
+    def validate_values(self) -> None:
+        """
+        Validates all the keys, so that it won't break
+        the maze in the building process.
+
+        Rules:
+        ENTRY cannot be the same as EXIT
+        HEIGHT or WIDTH cannot be less than 2
+        ENTRY or EXIT cannot be in an invalid location (e.g 5,5 in a 2x2)
+        """
+        configs = self.parse_keys()
+        if configs['ENTRY'] == configs['EXIT']:
+            raise ValueError(
+                "[ERROR]: ENTRY cannot be in teh same location as EXIT"
+            )
+        elif configs['HEIGHT'] < 2:
+            raise ValueError(
+                "[ERROR]: HEIGHT cannot be less than 2"
+            )
+        elif configs['WIDTH'] < 2:
+            raise ValueError("[ERROR]: WIDTH cannot be less than 2")
+        elif (configs['ENTRY'][0] < 0 or configs['ENTRY'][0] > configs['HEIGHT'] - 1) or (configs['ENTRY'][1] < 0 or configs['ENTRY'][1] > configs['WIDTH'] - 1):
+            raise ValueError("[ERROR]: ENTRY cannot be outside of the maze")
+        elif (configs['EXIT'][0] < 0 or configs['EXIT'][0] > configs['HEIGHT'] - 1) or (configs['EXIT'][1] < 0 or configs['EXIT'][1] > configs['WIDTH'] - 1):
+            raise ValueError("[ERROR]: EXIT cannot be outside of the maze")
+        self.config = configs
+        
 if __name__ == "__main__":
     configs = ConfigParse()
     try:
@@ -103,10 +131,13 @@ if __name__ == "__main__":
     except ValueError as e:
         exit(e)
     try:
-        config.parse_keys()
+        configs.parse_keys()
     except ValueError as e:
         exit(e)
-
+    try:
+        configs.validate_values()
+    except ValueError as e:
+        exit(e)
     d = configs.config
     for i, j in d.items():
         print(f"KEY: {i} <-> VALUE: {j}")
