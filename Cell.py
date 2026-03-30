@@ -1,6 +1,3 @@
-from abc import ABC, abstractmethod
-
-
 class Cell:
     """
     This is the base class of all the cells in the maze

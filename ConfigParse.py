@@ -22,7 +22,7 @@ class ConfigParse:
             with open(self.file, 'r') as f:
                 lines = f.readlines()
         except FileNotFoundError:
-            raise FileNotFoundError(f"[ERROR]: {self.file} file does not exists")
+            exit(f"[ERROR]: {self.file} file does not exists")
         return lines
     
     def get_keys(self) -> dict:
@@ -44,7 +44,7 @@ class ConfigParse:
 
         for i in self.required_keys:
             if i not in not_parsed_config:
-                raise ValueError("[ERROR]: Error: Required keys are missing")
+                exit("[ERROR]: Error: Required keys are missing")
         return not_parsed_config
     
     def parse_keys(self) -> dict:
@@ -63,32 +63,32 @@ class ConfigParse:
         try:
             configs['WIDTH'] = int(configs['WIDTH'])
         except ValueError:
-            raise ValueError("[ERROR]: WIDTH should be a number(e.g. 15)")
+            exit("[ERROR]: WIDTH should be a number(e.g. 15)")
         try:
             configs['HEIGHT'] = int(configs['HEIGHT'])
         except ValueError:
-            raise ValueError("[ERROR]: HEIGHT should be a number(e.g. 15)")
+            exit("[ERROR]: HEIGHT should be a number(e.g. 15)")
         try:
             x, y = configs['ENTRY'].split(',', 1)
             configs['ENTRY'] = (int(x), int(y))
         except ValueError:
-            raise ValueError(
+            exit(
                 "[ERROR]: ENTRY should be two numbers separated by a comma(e.g. 0,0)")
         try:
             x, y = configs['EXIT'].split(',', 1)
             configs['EXIT'] = (int(x), int(y))
         except ValueError:
-            raise ValueError(
+            exit(
                 "[ERROR]: EXIT should be two numbers separated by a comma(e.g. 0,0)")
         try:
             configs['PERFECT'] = bool(configs['PERFECT'])
         except ValueError:
-            raise ValueError("[ERROR]: PERFECT can only be True or False")
+            exit("[ERROR]: PERFECT can only be True or False")
         if 'SEED' in configs:
             try:
                 configs['SEED'] = float(configs['SEED'])
             except ValueError:
-                raise ValueError("[ERROR]: SEED can only be a number")
+                exit("[ERROR]: SEED can only be a number")
         else:
             configs['SEED'] = 42
         return configs
@@ -105,39 +105,27 @@ class ConfigParse:
         """
         configs = self.parse_keys()
         if configs['ENTRY'] == configs['EXIT']:
-            raise ValueError(
+            exit(
                 "[ERROR]: ENTRY cannot be in teh same location as EXIT"
             )
         elif configs['HEIGHT'] < 2:
-            raise ValueError(
+            exit(
                 "[ERROR]: HEIGHT cannot be less than 2"
             )
         elif configs['WIDTH'] < 2:
-            raise ValueError("[ERROR]: WIDTH cannot be less than 2")
+            exit("[ERROR]: WIDTH cannot be less than 2")
         elif (configs['ENTRY'][0] < 0 or configs['ENTRY'][0] > configs['HEIGHT'] - 1) or (configs['ENTRY'][1] < 0 or configs['ENTRY'][1] > configs['WIDTH'] - 1):
-            raise ValueError("[ERROR]: ENTRY cannot be outside of the maze")
+            exit("[ERROR]: ENTRY cannot be outside of the maze")
         elif (configs['EXIT'][0] < 0 or configs['EXIT'][0] > configs['HEIGHT'] - 1) or (configs['EXIT'][1] < 0 or configs['EXIT'][1] > configs['WIDTH'] - 1):
-            raise ValueError("[ERROR]: EXIT cannot be outside of the maze")
+            exit("[ERROR]: EXIT cannot be outside of the maze")
         self.config = configs
         
 if __name__ == "__main__":
     configs = ConfigParse()
-    try:
-        configs.read_config_file()
-    except FileNotFoundError as e:
-        exit(e)
-    try:
-        configs.get_keys()
-    except ValueError as e:
-        exit(e)
-    try:
-        configs.parse_keys()
-    except ValueError as e:
-        exit(e)
-    try:
-        configs.validate_values()
-    except ValueError as e:
-        exit(e)
+    configs.read_config_file()
+    configs.get_keys()
+    configs.parse_keys()
+    configs.validate_values()
     d = configs.config
     for i, j in d.items():
         print(f"KEY: {i} <-> VALUE: {j}")
